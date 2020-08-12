@@ -219,6 +219,7 @@ open class FloatingPanelController: UIViewController {
     private var preSafeAreaInsets: UIEdgeInsets = .zero // Capture the latest one
     private var safeAreaInsetsObservation: NSKeyValueObservation?
     private let modalTransition = FloatingPanelModalTransition()
+    private var positionBeforeHiding: FloatingPanelPosition?
 
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -431,14 +432,21 @@ open class FloatingPanelController: UIViewController {
             // KVOs for topLayoutGuide & bottomLayoutGuide are not effective.
             // Instead, update(safeAreaInsets:) is called at `viewDidLayoutSubviews()`
         }
-
-        move(to: floatingPanel.layoutAdapter.layout.initialPosition,
-             animated: animated,
-             completion: completion)
+        
+        var showingPosition = self.layout.initialPosition
+        if self.behavior.showToLastPositionIfPossible,
+            let lastPosition = self.positionBeforeHiding,
+            self.floatingPanel.layoutAdapter.isValid(lastPosition)
+        {
+            showingPosition = lastPosition
+        }
+        
+        move(to: showingPosition, animated: animated, completion: completion)
     }
 
     /// Hides the surface view to the hidden position
     public func hide(animated: Bool = false, completion: (() -> Void)? = nil) {
+        self.positionBeforeHiding = self.position
         move(to: .hidden,
              animated: animated,
              completion: completion)
